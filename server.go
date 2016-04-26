@@ -10,12 +10,12 @@ import (
 	"log"
 	"net/http"
 
+	"golang.org/x/net/trace"
 	"golang.org/x/net/websocket"
 )
 
 var (
-	debugport = flag.Int("debugport", 44555, "Debugging port for net/trace")
-	port      = flag.Int("port", 4050, "The server port")
+	port = flag.Int("port", 4050, "The server port")
 )
 
 type Event struct {
@@ -23,7 +23,23 @@ type Event struct {
 	Y int `json:"y"`
 }
 
-func receiveWebsocket(ws *websocket.Conn) {
+// handleWebsocketMessage handles the message e arriving on connection ws.
+func handleWebsocketMessage(ws *websocket.Conn, e Event) error {
+	// Log the request with net.Trace
+	tr := trace.New("websocket.Receive", "receive")
+	defer tr.Finish()
+	tr.LazyPrintf("Got event %v\n", e)
+
+	// Echo the event back as JSON
+	err := websocket.JSON.Send(ws, e)
+	if err != nil {
+		return fmt.Errorf("Can't send: %s", err.Error())
+	}
+	return nil
+}
+
+// websocketConnection handles a single websocket connection - ws.
+func websocketConnection(ws *websocket.Conn) {
 	for {
 		var event Event
 		err := websocket.JSON.Receive(ws, &event)
@@ -31,10 +47,8 @@ func receiveWebsocket(ws *websocket.Conn) {
 			log.Println("Can't receive:", err.Error())
 			break
 		} else {
-			// Echo the event back as JSON
-			err := websocket.JSON.Send(ws, event)
-			if err != nil {
-				fmt.Println("Can't send:", err.Error())
+			if err := handleWebsocketMessage(ws, event); err != nil {
+				log.Println(err.Error())
 				break
 			}
 		}
@@ -42,7 +56,9 @@ func receiveWebsocket(ws *websocket.Conn) {
 }
 
 func main() {
-	http.Handle("/ws", websocket.Handler(receiveWebsocket))
+	// Set up websocket server and static file server. In addition, we're using
+	// net/trace for debugging - it will be available at /debug/requests.
+	http.Handle("/ws", websocket.Handler(websocketConnection))
 	http.Handle("/", http.FileServer(http.Dir("static/html")))
 
 	log.Printf("Server listening on port %d", *port)
