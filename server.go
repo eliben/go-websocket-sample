@@ -45,11 +45,15 @@ func handleWebsocketEchoMessage(ws *websocket.Conn, e Event) error {
 
 // websocketEchoConnection handles a single websocket echo connection - ws.
 func websocketEchoConnection(ws *websocket.Conn) {
+	log.Printf("Client connected from %s", ws.RemoteAddr())
 	for {
 		var event Event
 		err := websocket.JSON.Receive(ws, &event)
 		if err != nil {
-			log.Println("Can't receive:", err.Error())
+			log.Printf("Receive failed: %s; closing connection...", err.Error())
+			if err = ws.Close(); err != nil {
+				log.Println("Error closing connection:", err.Error())
+			}
 			break
 		} else {
 			if err := handleWebsocketEchoMessage(ws, event); err != nil {
