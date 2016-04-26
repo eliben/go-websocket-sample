@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/trace"
 	"golang.org/x/net/websocket"
@@ -19,12 +20,16 @@ var (
 )
 
 type Event struct {
+	// The fields of this struct must be exported (starting with upper-case) so
+	// that the json module will be able to write into them. Therefore we need
+	// field tags to specify the names by which these fields go in the JSON
+	// representation of events.
 	X int `json:"x"`
 	Y int `json:"y"`
 }
 
-// handleWebsocketMessage handles the message e arriving on connection ws.
-func handleWebsocketMessage(ws *websocket.Conn, e Event) error {
+// handleWebsocketEchoMessage handles the message e arriving on connection ws.
+func handleWebsocketEchoMessage(ws *websocket.Conn, e Event) error {
 	// Log the request with net.Trace
 	tr := trace.New("websocket.Receive", "receive")
 	defer tr.Finish()
@@ -38,8 +43,8 @@ func handleWebsocketMessage(ws *websocket.Conn, e Event) error {
 	return nil
 }
 
-// websocketConnection handles a single websocket connection - ws.
-func websocketConnection(ws *websocket.Conn) {
+// websocketEchoConnection handles a single websocket echo connection - ws.
+func websocketEchoConnection(ws *websocket.Conn) {
 	for {
 		var event Event
 		err := websocket.JSON.Receive(ws, &event)
@@ -47,7 +52,7 @@ func websocketConnection(ws *websocket.Conn) {
 			log.Println("Can't receive:", err.Error())
 			break
 		} else {
-			if err := handleWebsocketMessage(ws, event); err != nil {
+			if err := handleWebsocketEchoMessage(ws, event); err != nil {
 				log.Println(err.Error())
 				break
 			}
@@ -55,10 +60,19 @@ func websocketConnection(ws *websocket.Conn) {
 	}
 }
 
+// websocketTimeConnection handles a single websocket time connection - ws.
+func websocketTimeConnection(ws *websocket.Conn) {
+	for range time.Tick(1 * time.Second) {
+		// Once a second, send a message (as a string) with the current time.
+		websocket.Message.Send(ws, time.Now().Format("Mon, 02 Jan 2006 15:04:05 PST"))
+	}
+}
+
 func main() {
-	// Set up websocket server and static file server. In addition, we're using
+	// Set up websocket servers and static file server. In addition, we're using
 	// net/trace for debugging - it will be available at /debug/requests.
-	http.Handle("/ws", websocket.Handler(websocketConnection))
+	http.Handle("/wsecho", websocket.Handler(websocketEchoConnection))
+	http.Handle("/wstime", websocket.Handler(websocketTimeConnection))
 	http.Handle("/", http.FileServer(http.Dir("static/html")))
 
 	log.Printf("Server listening on port %d", *port)
