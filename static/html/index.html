@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	div#box {
+			width: 200px;
+			height: 100px;
+			border: 1px solid black;
+	}
+
+	p#output {
+		border: 1px solid red;
+	}
+</style>
+</head>
+
+<body>
+<div id="box" onmousemove="onMouseMoved(event)" onmouseout="onMouseOut()"></div>
+<p id="output"></p>
+
+<script type="text/javascript">
+	// WebSocket object - created when window is loaded.
+	var sock = null;
+
+	window.onload = function() {
+		// Connect the WebSocket to the server and register callbacks on it.
+		sock = new WebSocket("ws://127.0.0.1:4050/ws");
+
+		sock.onopen = function() {
+			console.log("connected");
+		}
+
+		sock.onclose = function(e) {
+			console.log("connection closed (" + e.code + ")");
+		}
+
+		sock.onmessage = function(e) {
+			var msg = JSON.parse(e.data);
+			var coordMsg = "Coordinates: (" + msg.x + "," + msg.y + ")";
+			document.getElementById("output").innerHTML = coordMsg;
+		}
+	};
+
+  // Send the msg object, encoded with JSON, on the websocket if it's open.
+	function socketSend(msg) {
+		if (sock != null && sock.readyState == WebSocket.OPEN) {
+			sock.send(JSON.stringify(msg));
+		} else {
+			console.log("Socket isn't OPEN");
+		}
+	}
+
+	function onMouseMoved(e) {
+		// When a "mouse moved" event is invoked, send it on the socket.
+		socketSend({x: e.clientX, y: e.clientY});
+	}
+
+	function onMouseOut() {
+			document.getElementById("output").innerHTML = "";
+	}
+</script>
+
+</body>
+</html>
