@@ -73,6 +73,7 @@ func websocketTimeConnection(ws *websocket.Conn) {
 }
 
 func main() {
+	flag.Parse()
 	// Set up websocket servers and static file server. In addition, we're using
 	// net/trace for debugging - it will be available at /debug/requests.
 	http.Handle("/wsecho", websocket.Handler(websocketEchoConnection))

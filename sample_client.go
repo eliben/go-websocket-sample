@@ -1,3 +1,7 @@
+// Sample client to test the go websocket server.
+//
+// Eli Bendersky [http://eli.thegreenplace.net]
+// This code is in the public domain.
 package main
 
 import (
@@ -50,6 +54,7 @@ func checkWsEcho() {
 }
 
 func main() {
+	flag.Parse()
 	checkWsEcho()
 	//checkWsTime()
 }
