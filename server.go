@@ -20,15 +20,15 @@ var (
 )
 
 type Event struct {
-	// The fields of this struct must be exported (starting with upper-case) so
-	// that the json module will be able to write into them. Therefore we need
-	// field tags to specify the names by which these fields go in the JSON
-	// representation of events.
+	// The fields of this struct must be exported so that the json module will be
+	// able to write into them. Therefore we need field tags to specify the names
+	// by which these fields go in the JSON representation of events.
 	X int `json:"x"`
 	Y int `json:"y"`
 }
 
-// handleWebsocketEchoMessage handles the message e arriving on connection ws.
+// handleWebsocketEchoMessage handles the message e arriving on connection ws
+// from the client.
 func handleWebsocketEchoMessage(ws *websocket.Conn, e Event) error {
 	// Log the request with net.Trace
 	tr := trace.New("websocket.Receive", "receive")
