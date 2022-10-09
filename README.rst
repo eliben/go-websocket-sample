@@ -1,3 +1,9 @@
+Note - repository archived
+==========================
+
+Contents moved to
+https://github.com/eliben/code-for-blog/tree/master/2016/go-websocket-sample
+
 go-websocket-sample
 ===================
 
